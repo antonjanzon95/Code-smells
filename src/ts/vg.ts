@@ -15,28 +15,22 @@ export class Product {
     public imageUrl: string[],
     public price: number,
     public description: string
-  ) {
-    this.id = id;
-    this.name = name;
-    this.imageUrl = imageUrl;
-    this.price = price;
-    this.description = description;
-  }
+  ) {}
 }
 
 export function sortProductsBy(sort: Sort, products: Product[]): Product[] {
-  let copiedList: Product[] = [];
-  products.forEach((product) => copiedList.push(product));
-
   if (sort === Sort.PRICE_ASCENDING) {
-    copiedList.sort((a, b) => a.price - b.price);
+    products.sort((a, b) => a.price - b.price);
   } else if (sort === Sort.PRICE_DECENDING) {
-    copiedList.sort((a, b) => b.price - a.price);
-  } else if (sort === Sort.NAME_ALPHABETIC) {
-    copiedList.sort((a, b) => (a.name < b.name ? -1 : 1));
+    products.sort((a, b) => b.price - a.price);
+  } else if (
+    sort === Sort.NAME_ALPHABETIC ||
+    sort === Sort.NAME_ALPHABETIC_REVERSE
+  ) {
+    products.sort((a, b) => (a.name < b.name ? -1 : 1));
   }
 
-  return copiedList;
+  return products;
 }
 
 /*
@@ -98,104 +92,80 @@ function createInfoNode(info: string) {
   return infoNode;
 }
 
-export function createProductHtml() {
-  let quantity2 = cartList.map((total: number) => {
-    return (total += cartList.quantity);
+function addEventListeners(container: HTMLDivElement, img: HTMLImageElement) {
+  img.addEventListener("mouseover", () => {
+    container.classList.add("hover");
+    img.classList.add("hover");
   });
 
-  let quantity = 0;
-  for (let i = 0; i < cartList.length; i++) {
-    quantity += cartList[i].quantity;
-  }
-  let floatingCart = document.getElementById(
+  img.addEventListener("mouseout", () => {
+    img.classList.remove("hover");
+    container.classList.remove("hover");
+  });
+}
+
+export function createProductHtml() {
+  const quantity = cartList.reduce(
+    (previousValue: number, currentValue: any) =>
+      previousValue + currentValue.quantity,
+    0
+  );
+  const floatingCart = document.getElementById(
     "floatingcartnumber"
   ) as HTMLElement;
-  floatingCart.innerHTML = "" + quantity;
-
-  /* Flytta ner funktionen utanför denna funktion */
+  floatingCart.innerHTML = quantity.toString();
 
   for (let i = 0; i < productList.length; i++) {
     let dogproduct: HTMLDivElement = document.createElement("div");
     let dogImgContainer: HTMLDivElement = createDogImgContainer();
-
-    dogproduct.appendChild(dogImgContainer);
-
     let dogImg: HTMLImageElement = createDogImg(
       productList[i].picture,
       productList[i].pictureAlt
     );
-
-    dogImg.addEventListener("mouseover", () => {
-      cartSymbolContainer.classList.add("hover");
-      dogImg.classList.add("hover");
-    });
-
-    dogImg.addEventListener("mouseout", () => {
-      dogImg.classList.remove("hover");
-      cartSymbolContainer.classList.remove("hover");
-    });
-
-    dogImgContainer.appendChild(dogImg);
-
     let cartSymbolContainer: HTMLDivElement = createCartSymbolContainer();
-    dogImgContainer.appendChild(cartSymbolContainer);
-
     let cartSymbol: HTMLElement = createCartSymbol();
-    cartSymbolContainer.appendChild(cartSymbol);
-
     let name: HTMLHeadingElement = createNameHeading(productList[i].name);
-    dogproduct.appendChild(name);
-
     let price: HTMLHeadingElement = createPriceNode(productList[i].price);
-    dogproduct.appendChild(price);
-
     let info: HTMLHeadingElement = createInfoNode(productList[i].info);
+
+    dogproduct.appendChild(dogImgContainer);
+    dogImgContainer.appendChild(dogImg);
+    dogImgContainer.appendChild(cartSymbolContainer);
+    cartSymbolContainer.appendChild(cartSymbol);
+    dogproduct.appendChild(name);
+    dogproduct.appendChild(price);
     dogproduct.appendChild(info);
+
+    addEventListeners(cartSymbolContainer, dogImg);
 
     productList[i].productSpec = false;
 
-    dogImg.addEventListener("click", () => {
-      productList[i].productSpec = !productList[i].productSpec;
-      window.location.href = "product-spec.html#backArrow";
-      let listastext = JSON.stringify(productList);
-      localStorage.setItem("savedList", listastext);
-    });
+    dogproduct.className = "dogproduct";
 
-    cartSymbol.addEventListener("click", () => {
-      let cart = new Cart();
-      cart.addToCart(i);
-    });
+    const category = productList[i].category;
+    const container = document.getElementById(category) as HTMLElement;
 
-    if (productList[i].category === "sassy") {
-      let cat1: HTMLElement = document.getElementById("sassy") as HTMLElement;
-      dogproduct.className = "dogproduct";
-      cat1.appendChild(dogproduct);
-    }
-    if (productList[i].category === "kriminella") {
-      let cat2: HTMLElement = document.getElementById(
-        "kriminella"
-      ) as HTMLElement;
-      dogproduct.className = "dogproduct";
-      cat2.appendChild(dogproduct);
-    }
-    if (productList[i].category == "singlar") {
-      let cat3: HTMLElement = document.getElementById("singlar") as HTMLElement;
-      dogproduct.className = "dogproduct";
-      cat3.appendChild(dogproduct);
-    }
-    if (productList[i].category === "puppy") {
-      let cat4: HTMLElement = document.getElementById("puppy") as HTMLElement;
-      dogproduct.className = "dogproduct";
-      cat4.appendChild(dogproduct);
-    }
-    if (productList[i].category === "oldies") {
-      let cat5: HTMLElement = document.getElementById("oldies") as HTMLElement;
-      dogproduct.className = "dogproduct";
-      cat5.appendChild(dogproduct);
+    switch (category) {
+      case "sassy":
+        container.appendChild(dogproduct);
+        break;
+      case "kriminella":
+        container.appendChild(dogproduct);
+        break;
+      case "singlar":
+        container.appendChild(dogproduct);
+        break;
+      case "puppy":
+        container.appendChild(dogproduct);
+        break;
+      case "oldies":
+        container.appendChild(dogproduct);
+        break;
+      default:
+        break;
     }
   }
-  let listastext = JSON.stringify(productList);
-  localStorage.setItem("savedList", listastext);
+  localStorage.setItem("savedList", JSON.stringify(productList));
   sessionStorage.clear();
 }
 
@@ -214,11 +184,11 @@ export class CartProduct {
 function getfromstorage() {
   let container = document.getElementById("checkout-table");
 
-  let fromstorage: string = localStorage.getItem("cartArray") || "";
-  let astext: CartProduct[] = JSON.parse(fromstorage);
+  let fromStorage: string = localStorage.getItem("cartArray") || "";
+  let asText: CartProduct[] = JSON.parse(fromStorage);
 
   let productcontainer = document.getElementById(
-    "product-ckeckout-container"
+    "product-checkout-container"
   ) as HTMLDivElement;
 
   let amountcontainer = document.getElementById(
@@ -247,15 +217,15 @@ function getfromstorage() {
   checkkouttotal2.appendChild(totaltext);
   totaltext.innerHTML = "total:";
 
-  for (let i: number = 0; i < astext.length; i++) {
+  for (let i: number = 0; i < asText.length; i++) {
     let productt: HTMLTableCellElement = document.createElement("th");
     titlecontainer.appendChild(productt);
-    productt.innerHTML = astext[i].name;
+    productt.innerHTML = asText[i].name;
     productt.className = "hej";
 
     let amountt: HTMLTableCellElement = document.createElement("th");
     amountcontainer.appendChild(amountt);
-    amountt.innerHTML = "x" + astext[i].amount;
+    amountt.innerHTML = "x" + asText[i].amount;
     amountt.className = "hej";
 
     let amountqt: HTMLTableCellElement = document.createElement("th");
@@ -281,8 +251,8 @@ function getfromstorage() {
 
   let addition: number = 0;
 
-  for (let i = 0; i < astext.length; i++) {
-    addition += astext[i].price *= astext[i].amount;
+  for (let i = 0; i < asText.length; i++) {
+    addition += asText[i].price *= asText[i].amount;
   }
 
   let totalprice2: HTMLTableCellElement = document.createElement("th");
